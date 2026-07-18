@@ -2,18 +2,23 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { motion } from "motion/react";
-import { BsRobot, BsCoin } from "react-icons/bs";
+import { BsCoin } from "react-icons/bs";
 import { HiOutlineLogout } from "react-icons/hi";
-import { FaUserAstronaut } from "react-icons/fa";
+// replaced FaUserAstronaut with mainIcon image
 import { useNavigate } from "react-router-dom";
 import { ServerURL } from '../App';
 import axios from 'axios';
 import { setUser } from "../store/userSlice";
+import AuthModel from "./AuthModel";
+import mainIcon from "../assets/mainIcon.png";
+import userIcon from "../assets/userIcon.png";
+
 
 function Navbar() {
   const user = useSelector((state) => state.user?.user ?? null);
   const [showUserPopup, setShowUserPopup] = useState(false);
   const [showCreditPopup, setShowCreditPopup] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const handleLogout = async () => {
@@ -40,15 +45,17 @@ function Navbar() {
         
         
         <div className="flex items-center gap-3 cursor-pointer">
-          <div className="bg-black text-white p-2 rounded-lg">
-            <BsRobot size={18} />
-          </div>
+          <img src={mainIcon} alt="InterviewAI logo" className="w-10 h-10 rounded-lg object-contain" />
           <h1 className="font-semibold hidden md:block text-lg">InterviewAI</h1>
         </div>
         <div className="flex items-center gap-6 relative">
           <div className="relative">
             <button
               onClick={() => {
+                if(!user){
+                  setShowAuth(true);
+                  return;
+                }
                 setShowCreditPopup((prev) => !prev);
                 setShowUserPopup(false);
               }}
@@ -77,13 +84,24 @@ function Navbar() {
           <div className="relative">
             <button
               onClick={() => {
+                if(!user){
+                  setShowAuth(true);
+                  return;
+                }
                 setShowUserPopup((prev) => !prev);
                 setShowCreditPopup(false);
               }}
-              className='w-9 h-9 bg-black text-white
-                    rounded-full flex items-center justify-center
-                    font-semibold'>
-                      {user ? user?.name?.charAt(0)?.toUpperCase() : <FaUserAstronaut size={20} />}
+              className={
+                user
+                  ? 'h-10 w-10 bg-white rounded-full border-2 border-black flex items-center justify-center text-black font-semibold focus:outline-none'
+                  : 'h-10 px-4 bg-transparent border-none rounded-none flex items-center justify-center gap-2 font-semibold focus:outline-none'
+              }
+            >
+              {user ? (
+                user?.name?.charAt(0)?.toUpperCase()
+              ) : (
+                <img src={userIcon} alt="user icon" style={{ width: 40, height: 40 }} />
+              )}
             </button>
             {showUserPopup && (
               <div className='absolute right-0 mt-3 w-48 bg-white
@@ -109,6 +127,7 @@ function Navbar() {
           </div>
         </div>
       </motion.div>
+      {showAuth && <AuthModel onClose={()=>setShowAuth(false)}/>}
     </div>
   );
 }
