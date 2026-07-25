@@ -11,7 +11,11 @@ import {
   FaChartLine,
 } from "react-icons/fa";
 import { ServerURL } from "../App";
+import { useSelector, useDispatch } from "react-redux";
+import { setUser } from "../store/userSlice.js";
 function Step1SetUp({ onStart }) {
+  const userData = useSelector((state) => state.user.user);
+  const dispatch = useDispatch();
   const [role, setRole] = useState("");
   const [experience, setExperience] = useState("");
   const [mode, setMode] = useState("Technical");
@@ -41,6 +45,22 @@ function Step1SetUp({ onStart }) {
       alert("Error analyzing resume: " + (error.response?.data?.message || error.message));
     } finally {
       setAnalyzing(false);
+    }
+  }
+  const handleStart = async() => {
+    setLoading(true)
+    try{
+      const result = await axios.post(`${ServerURL}/api/interview/generate-questions`,
+        {role,experience,mode,resumeText,projects,skills}
+      ,{withCredentials:true});
+      console.log(result.data);
+      if (userData) {
+        dispatch(setUser({ ...userData, credits: result.data.creditsLeft }));
+      }
+      setLoading(false);
+      onStart(result.data);
+    }catch(error){
+      console.log(error);
     }
   }
   return (
@@ -79,9 +99,7 @@ to-green-100 p-12 flex flex-col justify-center"
                 text: "Choose Role & Experience",
               },
               {
-                icon: (
-                  <FaMicrophoneAlt Alt className="text-green-600 text-xl" />
-                ),
+                icon: <FaMicrophoneAlt className="text-green-600 text-xl" />,
                 text: "Smart Voice Interview",
               },
               {
@@ -202,14 +220,14 @@ to-green-100 p-12 flex flex-col justify-center"
                 </motion.button>
               )}
               <motion.button 
-              disabled = {!role || !experience}
-              onClick={() => onStart({role, experience, mode, resumeText, projects, skills})}
+              disabled = {!role || !experience || loading}
+              onClick={handleStart}
               whileHover={{scale : 1.03}}
               whileTap={{scale:0.95}}
               className="w-full disabled:bg-gray-600 bg-green-600
               hover:bg-green-700 text-white py-3 rounded-full text-lg font-semibold 
               transition duration-300 shadow-md">
-                 Start Interview
+                 {loading ? "Staring ..." : "Start Interview"}
               </motion.button>
           </div>
           
