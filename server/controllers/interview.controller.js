@@ -3,6 +3,27 @@ import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { askAI } from "../services/openRouter.service.js";
 import Interview from "../models/interview.model.js";
 import User from "../models/user.model.js";
+
+// Models occasionally wrap an otherwise valid JSON response in a Markdown code
+// fence. Remove that presentation layer before parsing the response.
+const parseAIJson = (response) => {
+  if (typeof response !== "string" || !response.trim()) {
+    throw new Error("AI returned an empty JSON response");
+  }
+
+  const json = response
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+
+  try {
+    return JSON.parse(json);
+  } catch {
+    throw new Error("AI returned invalid JSON");
+  }
+};
+
 export const analyzeResume = async (req, res) => {
   try {
     if (!req.file) {
@@ -27,13 +48,13 @@ export const analyzeResume = async (req, res) => {
       resumeText += pageText + "\n";
     }
 
-    resumeText.replace(/\s+/g, " ").trim();
+    resumeText = resumeText.replace(/\s+/g, " ").trim();
     const messages = [
       {
         role: "system",
         content: `
           Extract Structured data from resume.
-          Return strictly JSON:
+          Return only valid JSON. Do not wrap it in Markdown code fences:
           {
           "role" : "string",
           "experience" : "string",
@@ -48,7 +69,7 @@ export const analyzeResume = async (req, res) => {
       },
     ];
     const aiResponse = await askAI(messages);
-    const parsed = JSON.parse(aiResponse);
+    const parsed = parseAIJson(aiResponse);
     fs.unlinkSync(filepath);
 
     return res.json({
@@ -234,7 +255,7 @@ Sound like real interview feedback.
 - Do NOT repeat the question.
 - Do NOT explain scoring.
 - Keep tone professional and honest.
-Return ONLY valid JSON in this format:
+Return ONLY valid JSON, with no Markdown code fences, in this format:
 
 {
 "confidence": number,
@@ -254,7 +275,7 @@ Return ONLY valid JSON in this format:
       },
     ];
     const aiResponse = await askAI(messages);
-    const parsed = JSON.parse(aiResponse);
+    const parsed = parseAIJson(aiResponse);
 
     question.answer = answer;
     question.confidence = parsed.confidence;

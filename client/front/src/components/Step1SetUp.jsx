@@ -34,8 +34,8 @@ function Step1SetUp({ onStart }) {
     try{
       const result = await axios.post(ServerURL + "/api/interview/resume", formdata , {withCredentials:true});
       console.log(result.data);
-      setRole(result.data.role || "");
-      setExperience(result.data.experience || "");
+      // Keep the role and experience entered by the candidate. Resume
+      // analysis only adds context (projects, skills, and resume text).
       setProjects(result.data.projects || []);
       setSkills(result.data.skills || []);
       setResumeText(result.data.resumeText || "");
